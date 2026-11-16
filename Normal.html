@@ -1,0 +1,1878 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SyncFlow — Multilingual Waterfall Project & Task Hub</title>
+  <style>
+    /* ==========================================================================
+       1. RESET & CSS VARIABLES
+       ========================================================================== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --glass-bg: rgba(9, 32, 41, 0.62);
+      --glass-card: rgba(14, 48, 60, 0.72);
+      --glass-card-hover: rgba(20, 65, 80, 0.88);
+      --glass-border: rgba(180, 238, 255, 0.22);
+      --glass-border-strong: rgba(180, 238, 255, 0.42);
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.45);
+      --accent-teal: #2dd4bf;
+      --text-main: #f0f9ff;
+      --text-muted: #bae6fd;
+      --text-dim: #7dd3fc;
+      --prio-high: #fb7185;
+      --prio-med: #fbbf24;
+      --prio-low: #34d399;
+      --radius-lg: 18px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --shadow-glass: 0 12px 36px rgba(2, 12, 18, 0.6);
+    }
+
+    html, body {
+      min-height: 100%;
+      width: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      color: var(--text-main);
+      background: #051317;
+      overflow-x: hidden;
+    }
+
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(5, 19, 23, 0.4);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(125, 211, 252, 0.35);
+      border-radius: 99px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(125, 211, 252, 0.6);
+    }
+
+    /* ==========================================================================
+       2. FULL SCREEN ANIMATED WATERFALL BACKGROUND
+       ========================================================================== */
+    .waterfall {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background: linear-gradient(
+        to bottom,
+        #082630 0%,
+        #124654 15%,
+        #24707f 35%,
+        #3290a3 55%,
+        #24707f 75%,
+        #103a45 90%,
+        #061c22 100%
+      );
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    /* Soft vertical light columns */
+    .waterfall::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: repeating-linear-gradient(
+        to right,
+        transparent 0px,
+        transparent 40px,
+        rgba(210, 245, 255, 0.04) 40px,
+        rgba(210, 245, 255, 0.04) 44px,
+        transparent 44px,
+        transparent 90px,
+        rgba(255, 255, 255, 0.03) 90px,
+        rgba(255, 255, 255, 0.03) 93px,
+        transparent 93px,
+        transparent 140px
+      );
+      filter: blur(0.5px);
+    }
+
+    /* Moving vertical water streaks */
+    .waterfall::after {
+      content: '';
+      position: absolute;
+      inset: -30% 0;
+      width: 100%;
+      height: 160%;
+      background: repeating-linear-gradient(
+        to right,
+        transparent 0px,
+        transparent 26px,
+        rgba(230, 250, 255, 0.085) 26px,
+        rgba(230, 250, 255, 0.085) 29px,
+        transparent 29px,
+        transparent 58px,
+        rgba(200, 240, 255, 0.055) 58px,
+        rgba(200, 240, 255, 0.055) 60px,
+        transparent 60px,
+        transparent 100px,
+        rgba(160, 225, 245, 0.065) 100px,
+        rgba(160, 225, 245, 0.065) 103px
+      );
+      animation: flowDown 6s linear infinite;
+      filter: blur(0.7px);
+    }
+
+    @keyframes flowDown {
+      0%   { transform: translateY(0); }
+      100% { transform: translateY(120px); }
+    }
+
+    /* Pulsing foam at bottom */
+    .foam {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100%;
+      height: 28%;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 120% 100% at 50% 100%, rgba(220, 250, 255, 0.48) 0%, transparent 65%),
+        radial-gradient(ellipse 80% 90% at 25% 100%, rgba(200, 245, 255, 0.30) 0%, transparent 70%),
+        radial-gradient(ellipse 80% 90% at 75% 100%, rgba(200, 245, 255, 0.30) 0%, transparent 70%);
+      pointer-events: none;
+      animation: foamPulse 3s ease-in-out infinite alternate;
+    }
+
+    @keyframes foamPulse {
+      0%   { opacity: 0.65; transform: scaleY(1); }
+      100% { opacity: 0.98; transform: scaleY(1.08); }
+    }
+
+    /* Side and depth mist */
+    .mist {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      background:
+        radial-gradient(ellipse 20% 80% at 12% 50%, rgba(180, 235, 250, 0.12), transparent 70%),
+        radial-gradient(ellipse 20% 80% at 88% 50%, rgba(180, 235, 250, 0.12), transparent 70%),
+        radial-gradient(ellipse 60% 40% at 50% 90%, rgba(200, 245, 255, 0.18), transparent 70%);
+      pointer-events: none;
+    }
+
+    /* Falling splash droplet particles */
+    .splash-layer {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .splash-dot {
+      position: absolute;
+      border-radius: 50%;
+      background: rgba(230, 250, 255, 0.78);
+      box-shadow: 0 0 6px rgba(200, 240, 255, 0.65);
+      animation: fallSplash linear infinite;
+      will-change: transform;
+    }
+
+    @keyframes fallSplash {
+      0%   { transform: translateY(-10vh) scale(1); opacity: 0; }
+      10%  { opacity: 1; }
+      90%  { opacity: 0.85; }
+      100% { transform: translateY(110vh) scale(0.4); opacity: 0; }
+    }
+
+    /* ==========================================================================
+       3. TACTILE CLICKING & CONTENT ANIMATIONS
+       ========================================================================== */
+    .btn {
+      position: relative;
+      overflow: hidden;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 14px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--glass-border);
+      background: rgba(16, 56, 70, 0.75);
+      color: var(--text-main);
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      user-select: none;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      transition: transform 0.16s cubic-bezier(0.22, 1, 0.36, 1),
+                  background 0.2s ease,
+                  border-color 0.2s ease,
+                  box-shadow 0.2s ease;
+    }
+
+    .btn:hover {
+      background: rgba(28, 86, 106, 0.9);
+      border-color: var(--glass-border-strong);
+      box-shadow: 0 4px 16px rgba(56, 189, 248, 0.25);
+      transform: translateY(-1px);
+    }
+
+    .btn:active {
+      transform: scale(0.93) translateY(1px);
+      box-shadow: 0 0 18px var(--accent-glow);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #0284c7, #0d9488);
+      border-color: rgba(125, 211, 252, 0.55);
+      color: #ffffff;
+      box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+    }
+
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #0369a1, #0f766e);
+      box-shadow: 0 6px 20px rgba(45, 212, 191, 0.45);
+    }
+
+    .btn-danger {
+      background: rgba(159, 18, 57, 0.55);
+      border-color: rgba(251, 113, 133, 0.4);
+      color: #ffe4e6;
+    }
+
+    .btn-danger:hover {
+      background: rgba(190, 18, 60, 0.8);
+    }
+
+    .btn-sm {
+      padding: 6px 10px;
+      font-size: 0.78rem;
+    }
+
+    /* Water Ripple Effect on Click */
+    .water-ripple {
+      position: absolute;
+      border-radius: 50%;
+      transform: scale(0);
+      background: radial-gradient(circle, rgba(224, 242, 254, 0.9) 0%, rgba(56, 189, 248, 0.45) 55%, transparent 75%);
+      animation: rippleExpand 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      pointer-events: none;
+    }
+
+    @keyframes rippleExpand {
+      to {
+        transform: scale(3.5);
+        opacity: 0;
+      }
+    }
+
+    /* Staggered Card Entrance Animation */
+    @keyframes cardCascade {
+      0% {
+        opacity: 0;
+        transform: translateY(14px) scale(0.97);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .card-animate {
+      opacity: 0;
+      animation: cardCascade 0.36s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    /* ==========================================================================
+       4. APP SHELL & HEADER
+       ========================================================================== */
+    .app-container {
+      position: relative;
+      z-index: 1;
+      max-width: 1380px;
+      margin: 0 auto;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      min-height: 100vh;
+    }
+
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px 18px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: var(--shadow-glass);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-logo {
+      width: 40px;
+      height: 40px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, #38bdf8, #14b8a6);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 1.1rem;
+      color: #042f2e;
+      box-shadow: 0 0 18px rgba(56, 189, 248, 0.5);
+      flex-shrink: 0;
+    }
+
+    .brand-title h1 {
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+    }
+
+    .brand-title p {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .header-actions {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Language Switcher */
+    .lang-group {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(6, 24, 32, 0.8);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 4px;
+    }
+
+    .lang-pill {
+      position: relative;
+      overflow: hidden;
+      padding: 6px 11px;
+      border-radius: 7px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 0.14s ease, background 0.2s ease, color 0.2s ease;
+    }
+
+    .lang-pill:active {
+      transform: scale(0.92);
+    }
+
+    .lang-pill.active {
+      background: linear-gradient(135deg, #0284c7, #0d9488);
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(56, 189, 248, 0.4);
+    }
+
+    .lang-select {
+      background: rgba(14, 48, 60, 0.9);
+      color: var(--text-main);
+      border: 1px solid var(--glass-border);
+      border-radius: 7px;
+      padding: 5px 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      outline: none;
+      cursor: pointer;
+    }
+
+    .lang-select option {
+      background: #082630;
+      color: #f0f9ff;
+    }
+
+    /* ==========================================================================
+       5. WORKSPACE & TOPIC / SUBTOPIC BAR
+       ========================================================================== */
+    .workspace-panel {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      padding: 14px 18px;
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: var(--shadow-glass);
+    }
+
+    .topic-row, .subtopic-row, .toolbar-row {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .chip-scroll {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      flex: 1;
+      min-width: 200px;
+    }
+
+    .topic-chip {
+      position: relative;
+      overflow: hidden;
+      padding: 7px 14px;
+      border-radius: 99px;
+      border: 1px solid var(--glass-border);
+      background: rgba(12, 42, 54, 0.65);
+      color: var(--text-muted);
+      font-size: 0.83rem;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: transform 0.16s ease, all 0.2s ease;
+    }
+
+    .topic-chip:hover {
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .topic-chip:active {
+      transform: scale(0.94);
+    }
+
+    .topic-chip.active {
+      background: linear-gradient(135deg, rgba(2, 132, 199, 0.9), rgba(13, 148, 136, 0.9));
+      border-color: #7dd3fc;
+      color: #fff;
+      box-shadow: 0 0 16px rgba(56, 189, 248, 0.35);
+    }
+
+    .subtopic-chip {
+      position: relative;
+      overflow: hidden;
+      padding: 5px 11px;
+      border-radius: 8px;
+      border: 1px solid rgba(125, 211, 252, 0.2);
+      background: rgba(8, 30, 40, 0.6);
+      color: var(--text-muted);
+      font-size: 0.77rem;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: transform 0.16s ease, all 0.2s ease;
+    }
+
+    .subtopic-chip:active {
+      transform: scale(0.94);
+    }
+
+    .subtopic-chip.active {
+      background: rgba(56, 189, 248, 0.28);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .search-box {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 210px;
+    }
+
+    .input-glass {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--glass-border);
+      background: rgba(6, 22, 30, 0.75);
+      color: var(--text-main);
+      font-size: 0.85rem;
+      outline: none;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .input-glass:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+    }
+
+    .input-glass::placeholder {
+      color: rgba(186, 230, 253, 0.45);
+    }
+
+    .progress-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      min-width: 190px;
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 8px;
+      background: rgba(6, 22, 30, 0.8);
+      border-radius: 99px;
+      overflow: hidden;
+      border: 1px solid rgba(125, 211, 252, 0.2);
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #0284c7, #2dd4bf);
+      border-radius: 99px;
+      transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .progress-text {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      white-space: nowrap;
+    }
+
+    /* ==========================================================================
+       6. KANBAN BOARD COLUMNS
+       ========================================================================== */
+    .kanban-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      flex: 1;
+      align-items: start;
+    }
+
+    @media (max-width: 960px) {
+      .kanban-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .kanban-column {
+      background: var(--glass-bg);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      box-shadow: var(--shadow-glass);
+      display: flex;
+      flex-direction: column;
+      min-height: 420px;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .kanban-column.drag-over {
+      border-color: var(--accent);
+      background: rgba(14, 52, 66, 0.78);
+    }
+
+    .column-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+      margin-bottom: 12px;
+      border-bottom: 1px solid rgba(125, 211, 252, 0.15);
+    }
+
+    .column-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .column-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .dot-todo { background: #38bdf8; box-shadow: 0 0 10px rgba(56, 189, 248, 0.6); }
+    .dot-progress { background: #fbbf24; box-shadow: 0 0 10px rgba(251, 191, 36, 0.6); }
+    .dot-done { background: #34d399; box-shadow: 0 0 10px rgba(52, 211, 153, 0.6); }
+
+    .column-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .column-count {
+      background: rgba(6, 22, 30, 0.7);
+      border: 1px solid var(--glass-border);
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .task-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex: 1;
+      min-height: 250px;
+    }
+
+    /* Task Card */
+    .task-card {
+      position: relative;
+      background: var(--glass-card);
+      border: 1px solid var(--glass-border);
+      border-radius: var(--radius-md);
+      padding: 12px;
+      cursor: grab;
+      user-select: none;
+      transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .task-card:hover {
+      background: var(--glass-card-hover);
+      border-color: var(--glass-border-strong);
+      box-shadow: 0 6px 20px rgba(2, 12, 18, 0.4);
+      transform: translateY(-2px);
+    }
+
+    .task-card:active {
+      cursor: grabbing;
+    }
+
+    .task-card.dragging {
+      opacity: 0.45;
+      transform: scale(0.96);
+    }
+
+    .task-top {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+
+    .task-title {
+      font-size: 0.9rem;
+      font-weight: 600;
+      line-height: 1.35;
+      color: #fff;
+    }
+
+    .task-desc {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      line-height: 1.4;
+      margin-bottom: 10px;
+    }
+
+    .task-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      padding-top: 8px;
+      border-top: 1px solid rgba(125, 211, 252, 0.12);
+    }
+
+    .priority-badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+
+    .prio-High { background: rgba(251, 113, 133, 0.2); color: var(--prio-high); border: 1px solid rgba(251, 113, 133, 0.35); }
+    .prio-Medium { background: rgba(251, 191, 36, 0.2); color: var(--prio-med); border: 1px solid rgba(251, 191, 36, 0.35); }
+    .prio-Low { background: rgba(52, 211, 153, 0.2); color: var(--prio-low); border: 1px solid rgba(52, 211, 153, 0.35); }
+
+    .task-actions {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .action-btn {
+      position: relative;
+      overflow: hidden;
+      background: rgba(6, 22, 30, 0.65);
+      border: 1px solid rgba(125, 211, 252, 0.22);
+      color: var(--text-muted);
+      padding: 4px 7px;
+      border-radius: 5px;
+      font-size: 0.74rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.14s ease, all 0.15s ease;
+    }
+
+    .action-btn:hover {
+      background: rgba(56, 189, 248, 0.25);
+      color: #fff;
+      border-color: var(--accent);
+    }
+
+    .action-btn:active {
+      transform: scale(0.9);
+    }
+
+    .empty-dropzone {
+      border: 2px dashed rgba(125, 211, 252, 0.2);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      background: rgba(6, 22, 30, 0.3);
+    }
+
+    /* ==========================================================================
+       7. MODALS & CASE STUDY DRAWER
+       ========================================================================== */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      background: rgba(2, 12, 18, 0.75);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      display: grid;
+      place-items: center;
+      padding: 16px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+
+    .modal-backdrop.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 520px;
+      background: rgba(10, 38, 48, 0.94);
+      border: 1px solid var(--glass-border-strong);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-glass);
+      transform: scale(0.94) translateY(12px);
+      transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .modal-backdrop.open .modal-card {
+      transform: scale(1) translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(125, 211, 252, 0.2);
+    }
+
+    .modal-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .modal-body {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .modal-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    /* Case Study Slide-over Drawer */
+    .drawer-overlay {
+      position: fixed;
+      inset: 0;
+      z-index: 115;
+      background: rgba(2, 12, 18, 0.55);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+    }
+
+    .drawer-overlay.open {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 100%;
+      max-width: 440px;
+      height: 100%;
+      z-index: 120;
+      background: rgba(8, 30, 38, 0.96);
+      border-left: 1px solid var(--glass-border-strong);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      box-shadow: -10px 0 40px rgba(2, 12, 18, 0.7);
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      transform: translateX(100%);
+      transition: transform 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+      overflow-y: auto;
+    }
+
+    .drawer.open {
+      transform: translateX(0);
+    }
+
+    .drawer-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(125, 211, 252, 0.2);
+    }
+
+    .drawer-content {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      font-size: 0.88rem;
+      line-height: 1.6;
+      color: var(--text-muted);
+    }
+
+    .drawer-content h3 {
+      color: #fff;
+      font-size: 0.98rem;
+      margin-top: 8px;
+    }
+
+    .code-pill {
+      background: rgba(6, 22, 30, 0.85);
+      border: 1px solid var(--glass-border);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      color: var(--accent);
+    }
+
+    /* Toast Notification */
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 200;
+      background: rgba(8, 34, 44, 0.95);
+      border: 1px solid var(--accent);
+      color: #fff;
+      padding: 10px 16px;
+      border-radius: 10px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+      transform: translateY(80px);
+      opacity: 0;
+      pointer-events: none;
+      transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.3s ease;
+    }
+
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <!-- ================= WATERFALL BACKGROUND ================= -->
+  <div class="waterfall"></div>
+  <div class="foam"></div>
+  <div class="mist"></div>
+  <div class="splash-layer" id="splashLayer"></div>
+
+  <!-- ================= APP CONTAINER ================= -->
+  <div class="app-container">
+    <!-- Topbar -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-logo">SF</div>
+        <div class="brand-title">
+          <h1 id="uiTitle">SyncFlow Hub</h1>
+          <p id="uiSubtitle">Multilingual Waterfall Project & Task Engine</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <!-- Language Switcher -->
+        <div class="lang-group">
+          <button type="button" class="lang-pill active" data-lang="en" onclick="setLanguage('en', event)">EN</button>
+          <button type="button" class="lang-pill" data-lang="de" onclick="setLanguage('de', event)">DE</button>
+          <button type="button" class="lang-pill" data-lang="ne" onclick="setLanguage('ne', event)">NE</button>
+          <select class="lang-select" id="otherLangSelect" aria-label="Other Languages" onchange="handleOtherLang(this)">
+            <option value="" disabled selected>Other 🌐</option>
+            <option value="es">Español (ES)</option>
+            <option value="fr">Français (FR)</option>
+            <option value="hi">हिन्दी (HI)</option>
+            <option value="ja">日本語 (JA)</option>
+            <option value="ko">한국어 (KO)</option>
+            <option value="ar">العربية (AR)</option>
+            <option value="zh">中文 (ZH)</option>
+            <option value="custom">Custom Code...</option>
+          </select>
+        </div>
+        <button type="button" class="btn btn-primary" onclick="openNewTaskModal()">
+          <span id="uiNewTaskBtn">+ New Task</span>
+        </button>
+        <button type="button" class="btn" onclick="openCaseStudy()">
+          <span id="uiCaseStudyBtn">Case Study</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Workspace & Topic Panel -->
+    <section class="workspace-panel">
+      <!-- Topic Row -->
+      <div class="topic-row">
+        <div class="chip-scroll" id="topicChipsContainer"></div>
+        <button type="button" class="btn btn-sm" id="uiAddTopicBtn" onclick="openNewTopicModal()">+ Add Topic</button>
+      </div>
+
+      <!-- Subtopic Row -->
+      <div class="subtopic-row">
+        <div class="chip-scroll" id="subtopicChipsContainer"></div>
+        <button type="button" class="btn btn-sm" id="uiAddSubtopicBtn" onclick="openNewSubtopicModal()">+ Add Subtopic</button>
+      </div>
+
+      <!-- Toolbar Row -->
+      <div class="toolbar-row">
+        <div class="search-box">
+          <input type="text" class="input-glass" id="searchInput" placeholder="Search tasks or descriptions..." oninput="renderApp()" />
+        </div>
+        <div class="progress-wrap">
+          <div class="progress-track">
+            <div class="progress-fill" id="progressFill"></div>
+          </div>
+          <span class="progress-text" id="progressText">0% Complete</span>
+        </div>
+        <button type="button" class="btn btn-sm btn-danger" id="uiResetBtn" onclick="openConfirmModal('reset')">Reset Demo</button>
+      </div>
+    </section>
+
+    <!-- Kanban Grid -->
+    <main class="kanban-grid">
+      <!-- To Do Column -->
+      <div class="kanban-column" id="colTodo" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="dropTask(event, 'todo')">
+        <div class="column-header">
+          <div class="column-title-wrap">
+            <div class="column-dot dot-todo"></div>
+            <span class="column-title" id="colTodoTitle">To Do</span>
+          </div>
+          <span class="column-count" id="countTodo">0</span>
+        </div>
+        <div class="task-list" id="listTodo"></div>
+      </div>
+
+      <!-- In Progress Column -->
+      <div class="kanban-column" id="colProgress" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="dropTask(event, 'in_progress')">
+        <div class="column-header">
+          <div class="column-title-wrap">
+            <div class="column-dot dot-progress"></div>
+            <span class="column-title" id="colProgressTitle">In Progress</span>
+          </div>
+          <span class="column-count" id="countProgress">0</span>
+        </div>
+        <div class="task-list" id="listProgress"></div>
+      </div>
+
+      <!-- Completed Column -->
+      <div class="kanban-column" id="colDone" ondragover="allowDrop(event)" ondragleave="leaveDrop(event)" ondrop="dropTask(event, 'completed')">
+        <div class="column-header">
+          <div class="column-title-wrap">
+            <div class="column-dot dot-done"></div>
+            <span class="column-title" id="colDoneTitle">Completed</span>
+          </div>
+          <span class="column-count" id="countDone">0</span>
+        </div>
+        <div class="task-list" id="listDone"></div>
+      </div>
+    </main>
+  </div>
+
+  <!-- ================= MODALS & DRAWER ================= -->
+  <!-- New/Edit Task Modal -->
+  <div class="modal-backdrop" id="taskModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="taskModalTitle">Create New Task</h3>
+        <button type="button" class="btn btn-sm" onclick="closeModal('taskModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <input type="hidden" id="editTaskId" />
+        <div class="form-group">
+          <label class="form-label" id="lblTaskTitle">Task Title</label>
+          <input type="text" class="input-glass" id="taskTitleInput" placeholder="e.g. Implement German UI locale switcher" />
+        </div>
+        <div class="form-group">
+          <label class="form-label" id="lblTaskDesc">Description / Details</label>
+          <textarea class="input-glass" id="taskDescInput" rows="3" placeholder="Outline acceptance criteria or tech stack..."></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label" id="lblTaskPrio">Priority</label>
+            <select class="input-glass" id="taskPrioInput">
+              <option value="High">High Priority</option>
+              <option value="Medium" selected>Medium Priority</option>
+              <option value="Low">Low Priority</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" id="lblTaskStatus">Status</label>
+            <select class="input-glass" id="taskStatusInput">
+              <option value="todo" selected>To Do</option>
+              <option value="in_progress">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="closeModal('taskModal')">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="saveTask()">Save Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Topic Modal -->
+  <div class="modal-backdrop" id="topicModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Create New Topic Board</h3>
+        <button type="button" class="btn btn-sm" onclick="closeModal('topicModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Topic Name</label>
+          <input type="text" class="input-glass" id="newTopicInput" placeholder="e.g. Cybersecurity Audit" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="closeModal('topicModal')">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="saveNewTopic()">Add Topic</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Subtopic Modal -->
+  <div class="modal-backdrop" id="subtopicModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Create Subtopic Filter</h3>
+        <button type="button" class="btn btn-sm" onclick="closeModal('subtopicModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Subtopic Name</label>
+          <input type="text" class="input-glass" id="newSubtopicInput" placeholder="e.g. API Gateway" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="closeModal('subtopicModal')">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="saveNewSubtopic()">Add Subtopic</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Language Modal -->
+  <div class="modal-backdrop" id="customLangModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title">Custom Language Code</h3>
+        <button type="button" class="btn btn-sm" onclick="closeModal('customLangModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Enter 2-Letter ISO Language Code (e.g. IT, PT, RU, NL)</label>
+          <input type="text" class="input-glass" id="customLangInput" maxlength="5" placeholder="it" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="closeModal('customLangModal')">Cancel</button>
+        <button type="button" class="btn btn-primary" onclick="applyCustomLang()">Apply Language</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Custom Confirmation Modal (No browser confirm/alert) -->
+  <div class="modal-backdrop" id="confirmModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3 class="modal-title" id="confirmModalTitle">Confirm Action</h3>
+        <button type="button" class="btn btn-sm" onclick="closeModal('confirmModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p id="confirmModalText" style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.5;">Are you sure?</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn" onclick="closeModal('confirmModal')">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmActionBtn">Confirm</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Case Study Slide-over Drawer -->
+  <div class="drawer-overlay" id="drawerOverlay" onclick="closeCaseStudy()"></div>
+  <aside class="drawer" id="caseStudyDrawer">
+    <div class="drawer-header">
+      <h3 class="modal-title" id="drawerTitle">Project Case Study</h3>
+      <button type="button" class="btn btn-sm" onclick="closeCaseStudy()">✕</button>
+    </div>
+    <div class="drawer-content" id="drawerBody">
+      <h3>Architecture & UX Highlights</h3>
+      <p>SyncFlow Waterfall Hub demonstrates modern frontend engineering, responsive mobile-first architecture, and dynamic internationalization (i18n).</p>
+      
+      <h3>Key Technologies</h3>
+      <p>
+        • Pure vanilla <span class="code-pill">ES6 JavaScript</span> with zero external dependencies.<br>
+        • Custom CSS <span class="code-pill">Waterfall Animation Engine</span> with layered linear gradients, pulsing foam, mist, and 45 falling droplet particles.<br>
+        • Fluid <span class="code-pill">Drag-and-Drop + Touch Quick-Move</span> Kanban controller.<br>
+        • Persistent <span class="code-pill">localStorage</span> state across topics, subtopics, and languages.
+      </p>
+
+      <h3>Multilingual Readiness</h3>
+      <p>Built for cross-border remote teams and technical coordination across English, German, Nepali, Spanish, French, Hindi, Japanese, Korean, Arabic, Chinese, and custom locales.</p>
+    </div>
+  </aside>
+
+  <!-- Toast Banner -->
+  <div class="toast" id="toastBanner"></div>
+
+  <!-- ================= JAVASCRIPT APP ENGINE ================= -->
+  <script>
+    /* 1. Generate 45 Falling Splash Droplet Particles */
+    (function initWaterfallParticles() {
+      const splashLayer = document.getElementById('splashLayer');
+      const count = 45;
+      for (let i = 0; i < count; i++) {
+        const dot = document.createElement('div');
+        dot.className = 'splash-dot';
+        const size = Math.random() * 4 + 2;
+        dot.style.width = size + 'px';
+        dot.style.height = size + 'px';
+        dot.style.left = (Math.random() * 100) + '%';
+        dot.style.top = '0';
+        const duration = 1.5 + Math.random() * 2.5;
+        const delay = Math.random() * 5;
+        dot.style.animationDuration = duration + 's';
+        dot.style.animationDelay = delay + 's';
+        splashLayer.appendChild(dot);
+      }
+    })();
+
+    /* 2. Tactile Water-Ripple Wave on Every Button & Chip Click */
+    document.addEventListener('pointerdown', function(e) {
+      const target = e.target.closest('.btn, .topic-chip, .subtopic-chip, .lang-pill, .action-btn');
+      if (!target) return;
+      const ripple = document.createElement('span');
+      ripple.className = 'water-ripple';
+      const rect = target.getBoundingClientRect();
+      const size = Math.max(rect.width, rect.height);
+      ripple.style.width = ripple.style.height = size + 'px';
+      ripple.style.left = (e.clientX - rect.left - size / 2) + 'px';
+      ripple.style.top = (e.clientY - rect.top - size / 2) + 'px';
+      target.appendChild(ripple);
+      ripple.addEventListener('animationend', () => ripple.remove());
+    });
+
+    /* 3. Default Data & LocalStorage State */
+    const STORAGE_KEY = 'syncflow_waterfall_state_v1';
+
+    const DEFAULT_TOPICS = {
+      'Remote Web App': ['All', 'Frontend', 'Localization', 'Backend'],
+      'Cybersecurity Lab': ['All', 'PenTest', 'Virtualization', 'Config'],
+      '3D Game Engine': ['All', 'Physics', 'Shaders', 'UI']
+    };
+
+    const DEFAULT_TASKS = [
+      { id: 't1', topic: 'Remote Web App', subtopic: 'Localization', title: 'Multilingual EN/DE/NE Locale Switcher', desc: 'Implement reactive dynamic string translation across all UI elements and cards.', status: 'in_progress', priority: 'High' },
+      { id: 't2', topic: 'Remote Web App', subtopic: 'Frontend', title: 'Waterfall Glassmorphism UI & Particle Layer', desc: 'Anchor deep-blue gradient waterfall background with 45 falling mist droplets.', status: 'completed', priority: 'High' },
+      { id: 't3', topic: 'Remote Web App', subtopic: 'Backend', title: 'LocalStorage Task Persistence & State Sync', desc: 'Ensure Kanban cards retain state across browser reloads and mobile touch events.', status: 'todo', priority: 'Medium' },
+      { id: 't4', topic: 'Cybersecurity Lab', subtopic: 'PenTest', title: 'Vulnerability Assessment & Recon Lab', desc: 'Simulate network scanning and defensive security audit workflows.', status: 'todo', priority: 'High' },
+      { id: 't5', topic: '3D Game Engine', subtopic: 'Physics', title: 'Off-Road Vehicle Terrain Collision', desc: 'Configure multi-lane terrain road system with mud and friction physics.', status: 'in_progress', priority: 'Medium' }
+    ];
+
+    let appState = loadState();
+    let draggedTaskId = null;
+    let pendingConfirmAction = null;
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && parsed.topics && Array.isArray(parsed.tasks)) {
+            return parsed;
+          }
+        }
+      } catch (err) {
+        console.warn('Could not read localStorage, using defaults.', err);
+      }
+      return {
+        lang: 'en',
+        currentTopic: 'Remote Web App',
+        currentSubtopic: 'All',
+        topics: JSON.parse(JSON.stringify(DEFAULT_TOPICS)),
+        tasks: JSON.parse(JSON.stringify(DEFAULT_TASKS))
+      };
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (err) {
+        console.warn('Could not save to localStorage.', err);
+      }
+    }
+
+    /* 4. Multilingual Dictionary */
+    const TRANSLATIONS = {
+      en: {
+        title: "SyncFlow Hub",
+        subtitle: "Multilingual Waterfall Project & Task Engine",
+        newTask: "+ New Task",
+        caseStudy: "Case Study",
+        addTopic: "+ Add Topic",
+        addSubtopic: "+ Add Subtopic",
+        resetDemo: "Reset Demo",
+        todo: "To Do",
+        in_progress: "In Progress",
+        completed: "Completed",
+        completeSuffix: "Complete",
+        searchPlaceholder: "Search tasks or descriptions...",
+        dropHint: "Drop tasks here or click + New Task"
+      },
+      de: {
+        title: "SyncFlow Hub",
+        subtitle: "Mehrsprachige Wasserfall Projekt- & Aufgaben-Engine",
+        newTask: "+ Neue Aufgabe",
+        caseStudy: "Projekt-Info",
+        addTopic: "+ Thema",
+        addSubtopic: "+ Unterthema",
+        resetDemo: "Demo zurücksetzen",
+        todo: "Zu erledigen",
+        in_progress: "In Bearbeitung",
+        completed: "Erledigt",
+        completeSuffix: "Abgeschlossen",
+        searchPlaceholder: "Aufgaben oder Beschreibungen suchen...",
+        dropHint: "Aufgaben hier ablegen"
+      },
+      ne: {
+        title: "SyncFlow हब",
+        subtitle: "बहुभाषी वाटरफल प्रोजेक्ट र टास्क इन्जिन",
+        newTask: "+ नयाँ टास्क",
+        caseStudy: "केस स्टडी",
+        addTopic: "+ विषय थप्नुहोस्",
+        addSubtopic: "+ उप-विषय",
+        resetDemo: "डेमो रिसेट",
+        todo: "गर्नुपर्ने",
+        in_progress: "प्रक्रियामा",
+        completed: "सम्पन्न",
+        completeSuffix: "पूरा भयो",
+        searchPlaceholder: "टास्क वा विवरण खोज्नुहोस्...",
+        dropHint: "यहाँ टास्क राख्नुहोस्"
+      },
+      es: {
+        title: "SyncFlow Hub",
+        subtitle: "Motor de Tareas y Proyectos Waterfall Multilingüe",
+        newTask: "+ Nueva Tarea",
+        caseStudy: "Caso de Estudio",
+        addTopic: "+ Tema",
+        addSubtopic: "+ Subtema",
+        resetDemo: "Reiniciar Demo",
+        todo: "Por Hacer",
+        in_progress: "En Progreso",
+        completed: "Completado",
+        completeSuffix: "Completado",
+        searchPlaceholder: "Buscar tareas o descripciones...",
+        dropHint: "Suelta tareas aquí"
+      },
+      fr: {
+        title: "SyncFlow Hub",
+        subtitle: "Moteur de Projets et Tâches Waterfall Multilingue",
+        newTask: "+ Nouvelle Tâche",
+        caseStudy: "Étude de Cas",
+        addTopic: "+ Sujet",
+        addSubtopic: "+ Sous-sujet",
+        resetDemo: "Réinitialiser",
+        todo: "À Faire",
+        in_progress: "En Cours",
+        completed: "Terminé",
+        completeSuffix: "Terminé",
+        searchPlaceholder: "Rechercher des tâches...",
+        dropHint: "Déposez vos tâches ici"
+      },
+      hi: {
+        title: "SyncFlow हब",
+        subtitle: "बहुभाषी वाटरफॉल प्रोजेक्ट और टास्क इंजन",
+        newTask: "+ नया टास्क",
+        caseStudy: "केस स्टडी",
+        addTopic: "+ विषय",
+        addSubtopic: "+ उप-विषय",
+        resetDemo: "डेमो रीसेट",
+        todo: "करने योग्य",
+        in_progress: "प्रगति पर",
+        completed: "पूर्ण",
+        completeSuffix: "पूर्ण",
+        searchPlaceholder: "टास्क या विवरण खोजें...",
+        dropHint: "यहाँ टास्क छोड़ें"
+      },
+      ja: {
+        title: "SyncFlow ハブ",
+        subtitle: "多言語ウォーターフォール・タスク管理エンジン",
+        newTask: "+ 新規タスク",
+        caseStudy: "ケーススタディ",
+        addTopic: "+ トピック追加",
+        addSubtopic: "+ サブトピック",
+        resetDemo: "デモをリセット",
+        todo: "未着手",
+        in_progress: "進行中",
+        completed: "完了",
+        completeSuffix: "完了",
+        searchPlaceholder: "タスクや説明を検索...",
+        dropHint: "ここにタスクをドロップ"
+      },
+      ko: {
+        title: "SyncFlow 허브",
+        subtitle: "다국어 워터폴 프로젝트 및 작업 엔진",
+        newTask: "+ 새 작업",
+        caseStudy: "사례 연구",
+        addTopic: "+ 주제 추가",
+        addSubtopic: "+ 하위 주제",
+        resetDemo: "데모 초기화",
+        todo: "할 일",
+        in_progress: "진행 중",
+        completed: "완료됨",
+        completeSuffix: "완료",
+        searchPlaceholder: "작업 또는 설명 검색...",
+        dropHint: "여기에 작업을 놓으세요"
+      },
+      ar: {
+        title: "مركز SyncFlow",
+        subtitle: "محرك المشاريع والمهام متعدد اللغات",
+        newTask: "+ مهمة جديدة",
+        caseStudy: "دراسة حالة",
+        addTopic: "+ موضوع",
+        addSubtopic: "+ موضوع فرعي",
+        resetDemo: "إعادة ضبط",
+        todo: "قيد الانتظار",
+        in_progress: "قيد التنفيذ",
+        completed: "مكتمل",
+        completeSuffix: "مكتمل",
+        searchPlaceholder: "ابحث في المهام...",
+        dropHint: "أسقط المهام هنا"
+      },
+      zh: {
+        title: "SyncFlow 中心",
+        subtitle: "多语言瀑布流项目与任务管理引擎",
+        newTask: "+ 新建任务",
+        caseStudy: "案例研究",
+        addTopic: "+ 添加主题",
+        addSubtopic: "+ 子主题",
+        resetDemo: "重置演示",
+        todo: "待办事项",
+        in_progress: "进行中",
+        completed: "已完成",
+        completeSuffix: "完成",
+        searchPlaceholder: "搜索任务或描述...",
+        dropHint: "将任务拖放到此处"
+      }
+    };
+
+    function getT(key) {
+      const lang = appState.lang;
+      if (TRANSLATIONS[lang] && TRANSLATIONS[lang][key]) {
+        return TRANSLATIONS[lang][key];
+      }
+      if (lang !== 'en') {
+        return `[${lang.toUpperCase()}] ${TRANSLATIONS.en[key] || key}`;
+      }
+      return TRANSLATIONS.en[key] || key;
+    }
+
+    function setLanguage(lang) {
+      appState.lang = lang;
+      saveState();
+      syncLangUI();
+      renderApp();
+      showToast(`Language: ${lang.toUpperCase()}`);
+    }
+
+    function handleOtherLang(select) {
+      if (!select.value) return;
+      if (select.value === 'custom') {
+        select.value = '';
+        document.getElementById('customLangInput').value = '';
+        document.getElementById('customLangModal').classList.add('open');
+        return;
+      }
+      setLanguage(select.value);
+    }
+
+    function applyCustomLang() {
+      const code = document.getElementById('customLangInput').value.trim().toLowerCase();
+      if (!code) return;
+      closeModal('customLangModal');
+      setLanguage(code);
+    }
+
+    function syncLangUI() {
+      document.querySelectorAll('.lang-pill').forEach(pill => {
+        pill.classList.toggle('active', pill.dataset.lang === appState.lang);
+      });
+      const select = document.getElementById('otherLangSelect');
+      if (['en', 'de', 'ne'].includes(appState.lang)) {
+        select.value = '';
+      } else if ([...select.options].some(opt => opt.value === appState.lang)) {
+        select.value = appState.lang;
+      }
+    }
+
+    /* 5. Main Render Pipeline */
+    function renderApp() {
+      // Translate UI labels
+      document.getElementById('uiTitle').innerText = getT('title');
+      document.getElementById('uiSubtitle').innerText = getT('subtitle');
+      document.getElementById('uiNewTaskBtn').innerText = getT('newTask');
+      document.getElementById('uiCaseStudyBtn').innerText = getT('caseStudy');
+      document.getElementById('uiAddTopicBtn').innerText = getT('addTopic');
+      document.getElementById('uiAddSubtopicBtn').innerText = getT('addSubtopic');
+      document.getElementById('uiResetBtn').innerText = getT('resetDemo');
+      document.getElementById('colTodoTitle').innerText = getT('todo');
+      document.getElementById('colProgressTitle').innerText = getT('in_progress');
+      document.getElementById('colDoneTitle').innerText = getT('completed');
+      document.getElementById('searchInput').placeholder = getT('searchPlaceholder');
+
+      // Ensure valid currentTopic
+      const topicKeys = Object.keys(appState.topics);
+      if (!topicKeys.includes(appState.currentTopic)) {
+        appState.currentTopic = topicKeys[0] || 'General';
+        if (!appState.topics[appState.currentTopic]) {
+          appState.topics[appState.currentTopic] = ['All'];
+        }
+      }
+
+      // Render Topic Chips
+      const topicContainer = document.getElementById('topicChipsContainer');
+      topicContainer.innerHTML = '';
+      topicKeys.forEach(topic => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = `topic-chip ${topic === appState.currentTopic ? 'active' : ''}`;
+        chip.innerText = topic;
+        chip.onclick = () => {
+          appState.currentTopic = topic;
+          appState.currentSubtopic = 'All';
+          saveState();
+          renderApp();
+        };
+        topicContainer.appendChild(chip);
+      });
+
+      // Render Subtopic Chips
+      const subtopicContainer = document.getElementById('subtopicChipsContainer');
+      subtopicContainer.innerHTML = '';
+      const subs = appState.topics[appState.currentTopic] || ['All'];
+      if (!subs.includes(appState.currentSubtopic)) {
+        appState.currentSubtopic = 'All';
+      }
+      subs.forEach(sub => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = `subtopic-chip ${sub === appState.currentSubtopic ? 'active' : ''}`;
+        chip.innerText = sub;
+        chip.onclick = () => {
+          appState.currentSubtopic = sub;
+          saveState();
+          renderApp();
+        };
+        subtopicContainer.appendChild(chip);
+      });
+
+      // Filter Tasks
+      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+      const filtered = appState.tasks.filter(t => {
+        const matchTopic = t.topic === appState.currentTopic;
+        const matchSub = appState.currentSubtopic === 'All' || t.subtopic === appState.currentSubtopic;
+        const matchSearch = !query ||
+          t.title.toLowerCase().includes(query) ||
+          t.desc.toLowerCase().includes(query) ||
+          t.subtopic.toLowerCase().includes(query);
+        return matchTopic && matchSub && matchSearch;
+      });
+
+      // Render Columns
+      const todoList = document.getElementById('listTodo');
+      const progressList = document.getElementById('listProgress');
+      const doneList = document.getElementById('listDone');
+
+      todoList.innerHTML = '';
+      progressList.innerHTML = '';
+      doneList.innerHTML = '';
+
+      const counts = { todo: 0, in_progress: 0, completed: 0 };
+
+      filtered.forEach((task, idx) => {
+        counts[task.status] = (counts[task.status] || 0) + 1;
+        const card = createTaskCard(task, idx);
+        if (task.status === 'todo') todoList.appendChild(card);
+        else if (task.status === 'in_progress') progressList.appendChild(card);
+        else if (task.status === 'completed') doneList.appendChild(card);
+      });
+
+      document.getElementById('countTodo').innerText = counts.todo;
+      document.getElementById('countProgress').innerText = counts.in_progress;
+      document.getElementById('countDone').innerText = counts.completed;
+
+      if (counts.todo === 0) todoList.innerHTML = `<div class="empty-dropzone">${escapeHTML(getT('dropHint'))}</div>`;
+      if (counts.in_progress === 0) progressList.innerHTML = `<div class="empty-dropzone">${escapeHTML(getT('dropHint'))}</div>`;
+      if (counts.completed === 0) doneList.innerHTML = `<div class="empty-dropzone">${escapeHTML(getT('dropHint'))}</div>`;
+
+      // Update Progress Bar
+      const total = filtered.length;
+      const percent = total > 0 ? Math.round((counts.completed / total) * 100) : 0;
+      document.getElementById('progressFill').style.width = `${percent}%`;
+      document.getElementById('progressText').innerText = `${percent}% ${getT('completeSuffix')}`;
+    }
+
+    function createTaskCard(task, index) {
+      const card = document.createElement('div');
+      card.className = 'task-card card-animate';
+      card.style.animationDelay = `${Math.min(index * 45, 360)}ms`;
+      card.draggable = true;
+      card.id = task.id;
+
+      card.ondragstart = (e) => {
+        draggedTaskId = task.id;
+        e.dataTransfer.setData('text/plain', task.id);
+        card.classList.add('dragging');
+      };
+      card.ondragend = () => {
+        card.classList.remove('dragging');
+        document.querySelectorAll('.kanban-column').forEach(c => c.classList.remove('drag-over'));
+      };
+
+      const canPrev = task.status !== 'todo';
+      const canNext = task.status !== 'completed';
+
+      card.innerHTML = `
+        <div class="task-top">
+          <span class="task-title">${escapeHTML(task.title)}</span>
+          <span class="priority-badge prio-${escapeHTML(task.priority)}">${escapeHTML(task.priority)}</span>
+        </div>
+        <div class="task-desc">${escapeHTML(task.desc)}</div>
+        <div class="task-meta">
+          <span style="font-size: 0.72rem; color: var(--text-dim); font-weight: 600;">#${escapeHTML(task.subtopic)}</span>
+          <div class="task-actions">
+            ${canPrev ? `<button type="button" class="action-btn" title="Move Back" onclick="moveTask('${task.id}', 'prev')">◀</button>` : ''}
+            <button type="button" class="action-btn" title="Edit Task" onclick="editTask('${task.id}')">Edit</button>
+            <button type="button" class="action-btn" title="Delete Task" onclick="openConfirmModal('delete', '${task.id}')">✕</button>
+            ${canNext ? `<button type="button" class="action-btn" title="Advance Stage" onclick="moveTask('${task.id}', 'next')">▶</button>` : ''}
+          </div>
+        </div>
+      `;
+      return card;
+    }
+
+    function escapeHTML(str) {
+      return String(str || '').replace(/[&<>'"]/g, tag => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;'
+      }[tag] || tag));
+    }
+
+    /* 6. Drag & Drop + Mobile Quick-Move */
+    function allowDrop(e) {
+      e.preventDefault();
+      const col = e.target.closest('.kanban-column');
+      if (col) col.classList.add('drag-over');
+    }
+
+    function leaveDrop(e) {
+      const col = e.target.closest('.kanban-column');
+      if (col && !col.contains(e.relatedTarget)) {
+        col.classList.remove('drag-over');
+      }
+    }
+
+    function dropTask(e, newStatus) {
+      e.preventDefault();
+      document.querySelectorAll('.kanban-column').forEach(c => c.classList.remove('drag-over'));
+      const id = e.dataTransfer.getData('text/plain') || draggedTaskId;
+      const task = appState.tasks.find(t => t.id === id);
+      if (task && task.status !== newStatus) {
+        task.status = newStatus;
+        saveState();
+        renderApp();
+        showToast(`Moved to ${getT(newStatus)}`);
+      }
+    }
+
+    function moveTask(id, dir) {
+      const task = appState.tasks.find(t => t.id === id);
+      if (!task) return;
+      const flow = ['todo', 'in_progress', 'completed'];
+      const idx = flow.indexOf(task.status);
+      if (dir === 'next' && idx < flow.length - 1) task.status = flow[idx + 1];
+      if (dir === 'prev' && idx > 0) task.status = flow[idx - 1];
+      saveState();
+      renderApp();
+      showToast(`Moved to ${getT(task.status)}`);
+    }
+
+    /* 7. Task, Topic, Subtopic & Confirmation Modals */
+    function openNewTaskModal() {
+      document.getElementById('taskModalTitle').innerText = getT('newTask');
+      document.getElementById('editTaskId').value = '';
+      document.getElementById('taskTitleInput').value = '';
+      document.getElementById('taskDescInput').value = '';
+      document.getElementById('taskPrioInput').value = 'Medium';
+      document.getElementById('taskStatusInput').value = 'todo';
+      document.getElementById('taskModal').classList.add('open');
+      setTimeout(() => document.getElementById('taskTitleInput').focus(), 50);
+    }
+
+    function editTask(id) {
+      const task = appState.tasks.find(t => t.id === id);
+      if (!task) return;
+      document.getElementById('taskModalTitle').innerText = 'Edit Task';
+      document.getElementById('editTaskId').value = task.id;
+      document.getElementById('taskTitleInput').value = task.title;
+      document.getElementById('taskDescInput').value = task.desc;
+      document.getElementById('taskPrioInput').value = task.priority;
+      document.getElementById('taskStatusInput').value = task.status;
+      document.getElementById('taskModal').classList.add('open');
+    }
+
+    function saveTask() {
+      const id = document.getElementById('editTaskId').value;
+      const title = document.getElementById('taskTitleInput').value.trim();
+      const desc = document.getElementById('taskDescInput').value.trim();
+      const priority = document.getElementById('taskPrioInput').value;
+      const status = document.getElementById('taskStatusInput').value;
+
+      if (!title) {
+        showToast('Please enter a task title');
+        document.getElementById('taskTitleInput').focus();
+        return;
+      }
+
+      if (id) {
+        const task = appState.tasks.find(t => t.id === id);
+        if (task) {
+          task.title = title;
+          task.desc = desc;
+          task.priority = priority;
+          task.status = status;
+          showToast('Task updated');
+        }
+      } else {
+        const subs = appState.topics[appState.currentTopic] || ['All', 'General'];
+        const chosenSub = appState.currentSubtopic !== 'All' ? appState.currentSubtopic : (subs[1] || 'General');
+        appState.tasks.unshift({
+          id: 't_' + Date.now(),
+          topic: appState.currentTopic,
+          subtopic: chosenSub,
+          title,
+          desc,
+          status,
+          priority
+        });
+        showToast('Task created');
+      }
+
+      saveState();
+      closeModal('taskModal');
+      renderApp();
+    }
+
+    function openNewTopicModal() {
+      document.getElementById('newTopicInput').value = '';
+      document.getElementById('topicModal').classList.add('open');
+      setTimeout(() => document.getElementById('newTopicInput').focus(), 50);
+    }
+
+    function saveNewTopic() {
+      const name = document.getElementById('newTopicInput').value.trim();
+      if (!name) return;
+      if (!appState.topics[name]) {
+        appState.topics[name] = ['All', 'General'];
+      }
+      appState.currentTopic = name;
+      appState.currentSubtopic = 'All';
+      saveState();
+      closeModal('topicModal');
+      renderApp();
+      showToast(`Topic "${name}" ready`);
+    }
+
+    function openNewSubtopicModal() {
+      document.getElementById('newSubtopicInput').value = '';
+      document.getElementById('subtopicModal').classList.add('open');
+      setTimeout(() => document.getElementById('newSubtopicInput').focus(), 50);
+    }
+
+    function saveNewSubtopic() {
+      const name = document.getElementById('newSubtopicInput').value.trim();
+      if (!name) return;
+      if (!appState.topics[appState.currentTopic].includes(name)) {
+        appState.topics[appState.currentTopic].push(name);
+      }
+      appState.currentSubtopic = name;
+      saveState();
+      closeModal('subtopicModal');
+      renderApp();
+      showToast(`Subtopic "#${name}" added`);
+    }
+
+    function openConfirmModal(type, targetId = null) {
+      const titleEl = document.getElementById('confirmModalTitle');
+      const textEl = document.getElementById('confirmModalText');
+      const btnEl = document.getElementById('confirmActionBtn');
+
+      if (type === 'delete') {
+        titleEl.innerText = 'Delete Task';
+        textEl.innerText = 'Remove this task card permanently from the board?';
+        btnEl.onclick = () => {
+          appState.tasks = appState.tasks.filter(t => t.id !== targetId);
+          saveState();
+          closeModal('confirmModal');
+          renderApp();
+          showToast('Task removed');
+        };
+      } else if (type === 'reset') {
+        titleEl.innerText = 'Reset Demo Workspace';
+        textEl.innerText = 'Restore all default topics, subtopics, and sample tasks?';
+        btnEl.onclick = () => {
+          localStorage.removeItem(STORAGE_KEY);
+          appState = {
+            lang: 'en',
+            currentTopic: 'Remote Web App',
+            currentSubtopic: 'All',
+            topics: JSON.parse(JSON.stringify(DEFAULT_TOPICS)),
+            tasks: JSON.parse(JSON.stringify(DEFAULT_TASKS))
+          };
+          saveState();
+          syncLangUI();
+          closeModal('confirmModal');
+          renderApp();
+          showToast('Demo data restored');
+        };
+      }
+
+      document.getElementById('confirmModal').classList.add('open');
+    }
+
+    function closeModal(id) {
+      document.getElementById(id).classList.remove('open');
+    }
+
+    function openCaseStudy() {
+      document.getElementById('drawerOverlay').classList.add('open');
+      document.getElementById('caseStudyDrawer').classList.add('open');
+    }
+
+    function closeCaseStudy() {
+      document.getElementById('drawerOverlay').classList.remove('open');
+      document.getElementById('caseStudyDrawer').classList.remove('open');
+    }
+
+    let toastTimeout = null;
+    function showToast(msg) {
+      const banner = document.getElementById('toastBanner');
+      banner.innerText = msg;
+      banner.classList.add('show');
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => banner.classList.remove('show'), 2200);
+    }
+
+    // Close modals/drawer with Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        ['taskModal', 'topicModal', 'subtopicModal', 'customLangModal', 'confirmModal'].forEach(closeModal);
+        closeCaseStudy();
+      }
+    });
+
+    // Boot application
+    syncLangUI();
+    renderApp();
+  </script>
+</body>
+</html>
